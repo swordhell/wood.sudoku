@@ -3,53 +3,64 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-
 public class SudokuCell : MonoBehaviour
 {
     public Vector2Int coordinate;
     public SudokuSubGrid subGrid;
-    int value = 0;
+    public int value { get; private set; }
 
     public TextMeshProUGUI txtNumber;
+    public GameObject draftPanel;
+    public TextMeshProUGUI[] txtDraftNumber;
     public Button btnNum;
-    // Start is called before the first frame update
+
+    public Color colorInputNormal = (Color)new Color32(0x2C, 0x52, 0xCF, 255);
+    public Color colorInputError = (Color)new Color32(0xFF, 0x10, 0x31, 255);
+
+    private UnityEngine.UI.Image bgImage;
+    public Color colorSelect = new Color32(0xB1, 0xC5, 0xFF, 255);
+    public Color colorRelation = new Color32(0xE9, 0xEE, 0xFE, 0xFF);
+    public Color colorUnselect = new Color32(0xE9, 0xDF, 0xD7, 255);
+
     void Start()
     {
+        bgImage = gameObject.GetComponent<UnityEngine.UI.Image>();
 
+        for (int i = 0; i < txtDraftNumber.Length; i++)
+        {
+            txtDraftNumber[i].text = (i + 1).ToString();
+            txtDraftNumber[i].gameObject.SetActive(false);
+        }
     }
 
-    // Update is called once per frame
     void Update()
     {
-
     }
 
     void Awake()
     {
-        btnNum.onClick.AddListener(OnNumClick);
+        btnNum.onClick.AddListener(OnBTNSelect);
     }
 
-    void OnNumClick()
+    void OnBTNSelect()
     {
-
+        SudokuGameManager.instance.OnBTNSelect(coordinate);
     }
-    public void InitValues(int _value)
+    public void SetCellValue(int _value)
     {
+        btnNum.gameObject.SetActive(true);
         if (_value != 0)
         {
             txtNumber.text = _value.ToString();
             txtNumber.color = (Color)new Color32(119, 110, 101, 255);
-            txtNumber.gameObject.SetActive(true);
-            btnNum.gameObject.SetActive(false);
         }
         else
         {
-            txtNumber.gameObject.SetActive(false);
-            btnNum.gameObject.SetActive(true);
-            txtNumber.text = "";
-            txtNumber.color = (Color)new Color32(233, 213, 215, 255);
+            txtNumber.text = " ";
+            txtNumber.color = colorInputNormal;
         }
         value = _value;
+        SetSelectMask(0);
     }
 
     public void SetCoordinate(int row, int col)
@@ -58,12 +69,140 @@ public class SudokuCell : MonoBehaviour
     }
 
     public bool checkPosition(int row, int col)
-{
-    return coordinate.x == row && coordinate.y == col;
+    {
+        return coordinate.x == row && coordinate.y == col;
 
-}
+    }
     public void SetSubGrid(SudokuSubGrid _subGrid)
     {
         subGrid = _subGrid;
+    }
+
+    public void SetSelectMask(int _mode)
+    {
+        switch (_mode)
+        {
+            case 0:
+                bgImage.color = colorUnselect;
+                break;
+            case 1:
+                bgImage.color = colorSelect;
+                break;
+            case 2:
+                bgImage.color = colorRelation;
+                break;
+        }
+    }
+
+    public void doInputNumber(int _value, bool isTrue)
+    {
+        doHideAllDraftNumber();
+        if (_value == 0)
+        {
+            txtNumber.text = " ";
+        }
+        else
+        {
+            txtNumber.text = _value.ToString();
+        }
+
+        if (isTrue)
+        {
+            txtNumber.color = colorInputNormal;
+        }
+        else
+        {
+            txtNumber.color = colorInputError;
+        }
+    }
+
+    public void doInputDraftNumber(int _value)
+    {
+        if (_value < 1)
+        {
+            return;
+        }
+        var txt = txtDraftNumber[_value - 1];
+        txtDraftNumber[_value - 1].gameObject.SetActive(!txt.gameObject.activeSelf);
+    }
+
+    public void doClearCellDraftNumber(int _value)
+    {
+        if (_value < 1)
+        {
+            return;
+        }
+        txtDraftNumber[_value - 1].gameObject.SetActive(false);
+    }
+
+    public void doHideAllDraftNumber()
+    {
+        foreach (var txt in txtDraftNumber)
+        {
+            txt.gameObject.SetActive(false);
+        }
+    }
+
+    public void doBoldDraftNumber(int _value, bool _isBold)
+    {
+        if (_value < 1)
+        {
+            return;
+        }
+
+        if (_isBold)
+        {
+            txtDraftNumber[_value - 1].fontStyle |= FontStyles.Bold;
+        }
+        else
+        {
+            txtDraftNumber[_value - 1].fontStyle = FontStyles.Normal;
+        }
+    }
+
+    public void doBoldNumber(bool _isBold)
+    {
+        if (_isBold)
+        {
+            txtNumber.fontStyle |= FontStyles.Bold;
+        }
+        else
+        {
+            txtNumber.fontStyle = FontStyles.Normal;
+        }
+    }
+
+    public void doClearAllBold()
+    {
+        txtNumber.fontStyle = FontStyles.Normal;
+        foreach (var txt in txtDraftNumber)
+        {
+            txt.fontStyle = FontStyles.Normal;
+        }
+    }
+
+    public void doTryCheckBold(int num)
+    {
+        var inputNum = num.ToString();
+        if (txtNumber.text == inputNum)
+        {
+            txtNumber.fontStyle |= FontStyles.Bold;
+        }
+        else
+        {
+            txtNumber.fontStyle = FontStyles.Normal;
+        }
+
+        for (int i = 0; i < txtDraftNumber.Length; i++)
+        {
+            if ((i + 1) == num)
+            {
+                txtDraftNumber[i].fontStyle |= FontStyles.Bold;
+            }
+            else
+            {
+                txtDraftNumber[i].fontStyle = FontStyles.Normal;
+            }
+        }
     }
 }

@@ -10,20 +10,16 @@ public class MainMenuPanel : MonoBehaviour
 
     private void Awake()
     {
-        btnPlay.onClick.AddListener(OnPlayGame);
-
+        btnPlay.onClick.AddListener(OnBTNPlay);
         sldDifficulty.onValueChanged.AddListener(OnDifficultyChanged);
     }
-    // Start is called before the first frame update
+
     void Start()
     {
-        
     }
 
-    // Update is called once per frame
     void Update()
     {
-        
     }
 
     public void OnDifficultyChanged(float value)
@@ -31,8 +27,8 @@ public class MainMenuPanel : MonoBehaviour
         SudokuGameManager.instance.SetDifficulty(value);
     }
 
-    public void OnPlayGame()
+    public void OnBTNPlay()
     {
-        SudokuGameManager.instance.OnPlayGame();
+        SudokuGameManager.instance.OnBTNPlay();
     }
 }
