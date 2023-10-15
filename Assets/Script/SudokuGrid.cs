@@ -74,7 +74,7 @@ public class SudokuGrid : MonoBehaviour
         IsGenerate = true;
 
         InitButtons();
-        resetDynamicData();
+        resultNumber = new int[9, 9];
         IsGenerate = false;
     }
 
@@ -306,14 +306,14 @@ public class SudokuGrid : MonoBehaviour
         }
         foreach (var cell in cells)
         {
-            cell.SetSelectMask(0);
+            cell.SetSelectMask(SudokuCell.SelectMask.None);
             if (IsRelationPosition(cell.coordinate, newVec))
             {
-                cell.SetSelectMask(2);
+                cell.SetSelectMask(SudokuCell.SelectMask.Relation);
             }
             if (cell.checkPosition(newVec.x, newVec.y))
             {
-                cell.SetSelectMask(1);
+                cell.SetSelectMask(SudokuCell.SelectMask.Select);
             }
 
             if (pickupNum == 0)
@@ -337,7 +337,7 @@ public class SudokuGrid : MonoBehaviour
         return ((a.x / 3) == (b.x / 3)) && (a.y / 3) == (b.y / 3);
     }
 
-    public int doInputNumber(Vector2Int coordinate, bool isDraft, int number)
+    public int doInputNumber(Vector2Int coordinate, bool isDraft, int _number)
     {
         if (coordinate.x == -1 || coordinate.y == -1)
         {
@@ -359,14 +359,14 @@ public class SudokuGrid : MonoBehaviour
             {
                 if (cell.checkPosition(coordinate.x, coordinate.y))
                 {
-                    cell.doInputDraftNumber(number);
+                    cell.doInputDraftNumber(_number);
                     break;
                 }
             }
         }
         else
         {
-            if (resultNumber[coordinate.x, coordinate.y] == number)
+            if (resultNumber[coordinate.x, coordinate.y] == _number)
             {
                 return 0;
             }
@@ -376,19 +376,19 @@ public class SudokuGrid : MonoBehaviour
                 return 0;
             }
 
-            resultNumber[coordinate.x, coordinate.y] = number;
-            var isTrue = gridNumber[coordinate.x, coordinate.y] == number;
+            resultNumber[coordinate.x, coordinate.y] = _number;
+            var isTrue = gridNumber[coordinate.x, coordinate.y] == _number;
             foreach (var cell in cells)
             {
                 if (cell.checkPosition(coordinate.x, coordinate.y))
                 {
-                    cell.doInputNumber(number, isTrue);
+                    cell.doInputNumber(_number, isTrue);
                 }
             }
 
             if (isTrue)
             {
-                doClearRelationCellDraftNumber(coordinate, number);
+                doClearRelationCellDraftNumber(coordinate, _number);
             }
 
             if (checkResultSuccess())
@@ -419,7 +419,7 @@ public class SudokuGrid : MonoBehaviour
             {
                 rowCell.doClearCellDraftNumber(number);
             }
-            var gridCell = findCellByCoordinate(new Vector2Int(offsetCol + (coordinate.x % 3) - 1, offsetRow + coordinate.y / 3));
+            var gridCell = findCellByCoordinate(new Vector2Int((offsetCol * 3) + (i % 3), (offsetRow * 3) + i / 3));
             if (gridCell != null)
             {
                 gridCell.doClearCellDraftNumber(number);
@@ -465,7 +465,7 @@ public class SudokuGrid : MonoBehaviour
     {
         foreach (var cell in cells)
         {
-            cell.SetSelectMask(0);
+            cell.SetSelectMask(SudokuCell.SelectMask.None);
             cell.doClearAllBold();
         }
         if (coordinate.x == -1 || coordinate.y == -1)

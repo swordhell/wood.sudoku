@@ -3,8 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+
 public class SudokuCell : MonoBehaviour
 {
+    public enum SelectMask : int
+    {
+        None = 0,
+        Select = 1,
+        Relation = 2,
+    }
     public Vector2Int coordinate;
     public SudokuSubGrid subGrid;
     public int value { get; private set; }
@@ -60,7 +67,7 @@ public class SudokuCell : MonoBehaviour
             txtNumber.color = colorInputNormal;
         }
         value = _value;
-        SetSelectMask(0);
+        SetSelectMask(SudokuCell.SelectMask.None);
     }
 
     public void SetCoordinate(int row, int col)
@@ -78,17 +85,17 @@ public class SudokuCell : MonoBehaviour
         subGrid = _subGrid;
     }
 
-    public void SetSelectMask(int _mode)
+    public void SetSelectMask(SelectMask _mode)
     {
         switch (_mode)
         {
-            case 0:
+            case SelectMask.None:
                 bgImage.color = colorUnselect;
                 break;
-            case 1:
+            case SelectMask.Select:
                 bgImage.color = colorSelect;
                 break;
-            case 2:
+            case SelectMask.Relation:
                 bgImage.color = colorRelation;
                 break;
         }
@@ -187,6 +194,7 @@ public class SudokuCell : MonoBehaviour
         if (txtNumber.text == inputNum)
         {
             txtNumber.fontStyle |= FontStyles.Bold;
+            SetSelectMask(SudokuCell.SelectMask.Relation);
         }
         else
         {

@@ -107,13 +107,13 @@ public class SudokuGameManager : MonoBehaviour
         }
     }
 
-    public void OnBTNInputNumber(int number)
+    public void OnBTNInputNumber(int _number)
     {
         if (!IsGameProgress())
         {
             return;
         }
-        var result = sudokuGrid.doInputNumber(pickupCoordinate, isDraft, number);
+        var result = sudokuGrid.doInputNumber(pickupCoordinate, isDraft, _number);
         if (result == 2)
         {
             errorCount++;
