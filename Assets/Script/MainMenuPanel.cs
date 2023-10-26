@@ -10,12 +10,14 @@ public class MainMenuPanel : MonoBehaviour
 
     private void Awake()
     {
-        btnPlay.onClick.AddListener(OnBTNPlay);
-        sldDifficulty.onValueChanged.AddListener(OnDifficultyChanged);
     }
 
     void Start()
     {
+        btnPlay.onClick.AddListener(OnBTNPlay);
+        sldDifficulty.onValueChanged.AddListener(OnDifficultyChanged);
+        
+        sldDifficulty.value = (float)(SudokuGameManager.instance.gameData.Difficulty);
     }
 
     void Update()
@@ -24,7 +26,7 @@ public class MainMenuPanel : MonoBehaviour
 
     public void OnDifficultyChanged(float value)
     {
-        SudokuGameManager.instance.SetDifficulty(value);
+        SudokuGameManager.instance.gameData.SetDifficulty(value);
     }
 
     public void OnBTNPlay()

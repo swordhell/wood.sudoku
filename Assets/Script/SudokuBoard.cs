@@ -30,8 +30,15 @@ public class SudokuBoard : MonoBehaviour
     public Toggle toggleMusic;
     public Toggle toggleDraft;
 
+    public GameData gameData;
+
     private void Awake()
     {
+    }
+
+    void Start()
+    {
+        gameData = SudokuGameManager.instance.gameData;
         btnBack.onClick.AddListener(OnBTNBack);
         btnNew.onClick.AddListener(OnBTNNew);
         btnReStart.onClick.AddListener(OnBTNReStart);
@@ -40,50 +47,66 @@ public class SudokuBoard : MonoBehaviour
 
         toggleMusic.onValueChanged.AddListener(OnBTNMusicOpen);
         toggleDraft.onValueChanged.AddListener(OnBTNDraftOpen);
-    }
 
-    void Start()
-    {
         sudokuGrid = grid.GetComponent<SudokuGrid>();
+        RefreshUI();
     }
 
-    void Update()
+    void RefreshUI()
     {
+
+        OnPause();
+        toggleDraft.isOn = gameData.IsDraft;
+        toggleMusic.isOn = gameData.IsMusic;
+        if (gameData.IsMusic)
+        {
+            musicPlayerGO.MPTK_UnPause();
+            if (musicPlayerGO.state != fluid_synth_status.FLUID_SYNTH_PLAYING)
+            {
+                musicPlayerGO.MPTK_Play();
+            }
+        }
+        else
+        {
+            musicPlayerGO.MPTK_Pause();
+        }
+
+        OnShowErrorCount();
+        OnTimerElapsed();
     }
+    void Update() { }
 
     public void OnBTNBack()
     {
         SudokuGameManager.instance.OnBTNBack();
-        sudokuGrid.GridCleanup();
         ResetUI();
+        sudokuGrid.GridCleanup();
     }
 
     public void OnBTNNew()
     {
         SudokuGameManager.instance.OnBTNNew();
         ResetUI();
-
-        sudokuGrid.Init();
+        sudokuGrid.GridInit();
     }
 
     public void OnBTNReStart()
     {
-        SudokuGameManager.instance.OnBTNNew();
+        if (!SudokuGameManager.instance.OnBTNRestart())
+        {
+            return;
+        }
         ResetUI();
-
         sudokuGrid.ReStart();
     }
 
     private void ResetUI()
     {
-        OnShowErrorCount();
-        doPause(false);
-        OnBTNMusicOpen(false);
-
         panelSuccess.SetActive(false);
         panelDeafeate.SetActive(false);
-        toggleMusic.isOn = false;
-        txtSpendTime.text = "00:00:00";
+        OnPause();
+        OnShowErrorCount();
+        OnTimerElapsed();
     }
 
     public void OnBTNPause()
@@ -91,9 +114,9 @@ public class SudokuBoard : MonoBehaviour
         SudokuGameManager.instance.OnBTNPause();
     }
 
-    public void doPause(bool _enable)
+    public void OnPause()
     {
-        pauseBoard.SetActive(_enable);
+        pauseBoard.SetActive(gameData.IsPaused);
     }
 
     public void doSuccess()
@@ -133,9 +156,14 @@ public class SudokuBoard : MonoBehaviour
         SudokuGameManager.instance.OnBTNDraftOpen(_isOpen);
     }
 
-    public void OnTimerElapsed(int spendTimeInSeconds)
+    public void OnTimerElapsed()
     {
-        txtSpendTime.text = ConvertSecondsToTime(spendTimeInSeconds);
+        txtSpendTime.text = ConvertSecondsToTime(gameData.SpendTimeInSeconds);
+    }
+
+    public void OnShowErrorCount()
+    {
+        txtErrorCount.text = string.Format("error: {0}/3", gameData.ErrorCount);
     }
 
     public static string ConvertSecondsToTime(int seconds)
@@ -144,8 +172,4 @@ public class SudokuBoard : MonoBehaviour
         return timeSpan.ToString();
     }
 
-    public void OnShowErrorCount()
-    {
-        txtErrorCount.text = string.Format("error: {0}", SudokuGameManager.instance.errorCount);
-    }
 }

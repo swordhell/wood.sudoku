@@ -11,7 +11,6 @@ public class SudokuSubGrid : MonoBehaviour
 
     private void Awake()
     {
-        cells = new SudokuCell[9, 9];
     }
 
     public void SetCoordinate(int row, int col)
@@ -42,7 +41,6 @@ public class SudokuSubGrid : MonoBehaviour
 
     void Start()
     {
-
     }
 
     void Update()

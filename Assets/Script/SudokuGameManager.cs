@@ -8,12 +8,6 @@ public class SudokuGameManager : MonoBehaviour
     public static SudokuGameManager instance { get; private set; }
 
     public int sudokuSize { get; private set; }
-    public int difficulty { get; set; }
-    public GameState gameState { get; set; }
-    public bool isPaused { get; set; }
-    public bool isDraft { get; set; }
-    public int errorCount { get; set; }
-    public Vector2Int pickupCoordinate;
 
     public GameObject sudokuCanvas;
     private SudokuGrid sudokuGrid;
@@ -21,61 +15,59 @@ public class SudokuGameManager : MonoBehaviour
     public GameObject mainMenuCanvas;
     private SudokuBoard sudokuBoard;
 
-    public enum GameState
-    {
-        idle,
-        start,
-        fail,
-        success,
-    }
+    private int MaxErrorCount = 2;
 
-    public int spendTimeInSeconds { get; set; }
+    public GameData gameData;
+
     private void Awake()
     {
+        gameData = new GameData();
         instance = this;
-        OnBTNBack();
+
+        gameData.Awake();
+
         initMember();
+
+        if (gameData.GameState == GameData.EGameState.start)
+        {
+            mainMenuCanvas.SetActive(false);
+            sudokuCanvas.SetActive(true);
+        }
     }
 
     private void initMember()
     {
         sudokuSize = 9;
-        difficulty = 40;
-
-        pickupCoordinate.x = -1;
-        pickupCoordinate.y = -1;
-
-        gameState = GameState.idle;
-    }
-
-    private void resetDynamicData()
-    {
-        gameState = GameState.idle;
-        errorCount = 0;
-        spendTimeInSeconds = 0;
-        isPaused = false;
-    }
-
-    public void SetDifficulty(float value)
-    {
-        difficulty = (int)value;
     }
 
     public void OnBTNPlay()
     {
+        gameData.ResetAll();
+        gameData.SetGameState(GameData.EGameState.idle);
         mainMenuCanvas.SetActive(false);
         sudokuCanvas.SetActive(true);
     }
 
     public void OnBTNNew()
     {
-        resetDynamicData();
-        gameState = GameState.start;
+        gameData.ResetAll();
+        gameData.SetGameState(GameData.EGameState.start);
+    }
+
+    public bool OnBTNRestart()
+    {
+        if (gameData.GameState == GameData.EGameState.idle)
+        {
+            return false;
+        }
+        
+        gameData.Restart();
+        return true;
     }
 
     public void OnBTNBack()
     {
-        resetDynamicData();
+        gameData.ResetAll();
         sudokuCanvas.SetActive(false);
         mainMenuCanvas.SetActive(true);
     }
@@ -87,10 +79,8 @@ public class SudokuGameManager : MonoBehaviour
             return;
         }
         Debug.Log($"OnBTNSelect {coordinate.x} {coordinate.y}");
-        pickupCoordinate = coordinate;
-
-        sudokuGrid.doSelect(pickupCoordinate);
-
+        gameData.SetPickupCoordinate(coordinate);
+        sudokuGrid.OnSelect();
     }
 
     private void initSudoGameObject()
@@ -113,22 +103,21 @@ public class SudokuGameManager : MonoBehaviour
         {
             return;
         }
-        var result = sudokuGrid.doInputNumber(pickupCoordinate, isDraft, _number);
+        var result = sudokuGrid.doInputNumber(gameData.PickupCoordinate, gameData.IsDraft, _number);
         if (result == 2)
         {
-            errorCount++;
+            gameData.IncErrorCount();
             sudokuBoard.OnShowErrorCount();
-            if (errorCount > 5)
+            if (gameData.ErrorCount > MaxErrorCount)
             {
                 OnFail();
             }
         }
-
     }
 
     public bool IsGameProgress()
     {
-        return gameState == GameState.start && !isPaused;
+        return gameData.GameState == GameData.EGameState.start && !gameData.IsPaused;
     }
 
     public void OnBTNClear()
@@ -137,12 +126,9 @@ public class SudokuGameManager : MonoBehaviour
         {
             return;
         }
-        sudokuGrid.doClearCell(pickupCoordinate);
+        sudokuGrid.doClearCell(gameData.PickupCoordinate);
 
-        pickupCoordinate.x = -1;
-        pickupCoordinate.y = -1;
-
-
+        gameData.ResetPickupCoordinate();
     }
 
     void Start()
@@ -153,16 +139,16 @@ public class SudokuGameManager : MonoBehaviour
 
     void Update()
     {
+        gameData.Update();
     }
 
     public void OnBTNPause()
     {
-        if (gameState == GameState.start)
+        if (gameData.GameState == GameData.EGameState.start)
         {
-            isPaused = !isPaused;
-            sudokuBoard.doPause(isPaused);
+            gameData.SetPause(!gameData.IsPaused);
+            sudokuBoard.OnPause();
         }
-
     }
 
     private void OnTimerElapsed()
@@ -171,31 +157,32 @@ public class SudokuGameManager : MonoBehaviour
         {
             return;
         }
-        spendTimeInSeconds++;
-        sudokuBoard.OnTimerElapsed(spendTimeInSeconds);
+        gameData.IncrSpendTimeInSeconds();
+        sudokuBoard.OnTimerElapsed();
     }
 
     public void OnSuccess()
     {
-        gameState = GameState.success;
-        sudokuBoard.doPause(isPaused);
+        gameData.SetGameState(GameData.EGameState.success);
+        sudokuBoard.OnPause();
         sudokuBoard.doSuccess();
     }
 
     public void OnFail()
     {
-        gameState = GameState.fail;
-        sudokuBoard.doPause(isPaused);
+        gameData.SetGameState(GameData.EGameState.fail);
+        gameData.SetPause(false);
+        sudokuBoard.OnPause();
         sudokuBoard.doDefeate();
     }
 
     public void OnBTNMusicOpen(bool _isOpen)
     {
-
+        gameData.SetMusic(_isOpen);
     }
 
     public void OnBTNDraftOpen(bool _isOpen)
     {
-        isDraft = _isOpen;
+        gameData.SetIsDraft(_isOpen);
     }
 }

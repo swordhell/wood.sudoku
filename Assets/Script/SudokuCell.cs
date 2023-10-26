@@ -21,6 +21,8 @@ public class SudokuCell : MonoBehaviour
     public TextMeshProUGUI[] txtDraftNumber;
     public Button btnNum;
 
+
+    public Color colorDefault = (Color)new Color32(0x77, 0x6E, 0x65, 255);
     public Color colorInputNormal = (Color)new Color32(0x2C, 0x52, 0xCF, 255);
     public Color colorInputError = (Color)new Color32(0xFF, 0x10, 0x31, 255);
 
@@ -31,13 +33,6 @@ public class SudokuCell : MonoBehaviour
 
     void Start()
     {
-        bgImage = gameObject.GetComponent<UnityEngine.UI.Image>();
-
-        for (int i = 0; i < txtDraftNumber.Length; i++)
-        {
-            txtDraftNumber[i].text = (i + 1).ToString();
-            txtDraftNumber[i].gameObject.SetActive(false);
-        }
     }
 
     void Update()
@@ -46,6 +41,13 @@ public class SudokuCell : MonoBehaviour
 
     void Awake()
     {
+        bgImage = gameObject.GetComponent<UnityEngine.UI.Image>();
+
+        for (int i = 0; i < txtDraftNumber.Length; i++)
+        {
+            txtDraftNumber[i].text = (i + 1).ToString();
+            txtDraftNumber[i].gameObject.SetActive(false);
+        }
         btnNum.onClick.AddListener(OnBTNSelect);
     }
 
@@ -53,13 +55,21 @@ public class SudokuCell : MonoBehaviour
     {
         SudokuGameManager.instance.OnBTNSelect(coordinate);
     }
-    public void SetCellValue(int _value)
+    public void SetCellValue(int _value, bool _isDefault)
     {
         btnNum.gameObject.SetActive(true);
         if (_value != 0)
         {
             txtNumber.text = _value.ToString();
-            txtNumber.color = (Color)new Color32(119, 110, 101, 255);
+            if (_isDefault)
+            {
+                txtNumber.color = colorDefault;
+            }
+            else
+            {
+                txtNumber.color = colorInputNormal;
+            }
+;
         }
         else
         {
@@ -148,6 +158,7 @@ public class SudokuCell : MonoBehaviour
         {
             txt.gameObject.SetActive(false);
         }
+        SudokuGameManager.instance.gameData.ClearDraftNumber(coordinate.x, coordinate.y);
     }
 
     public void doBoldDraftNumber(int _value, bool _isBold)

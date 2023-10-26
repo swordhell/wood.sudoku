@@ -6,33 +6,27 @@ using UnityEditor;
 public class SudokuGrid : MonoBehaviour
 {
     public bool IsGenerate { get; private set; }
-    private int[,] gridNumber = new int[9, 9];
-    private int[,] puzzleNumber = new int[9, 9];
-    private int[,] resultNumber = new int[9, 9];
 
     public SudokuSubGrid[,] subGrids { get; private set; }
     public SudokuCell[] cells;
-    private int stakeLayer = 0;
     public GameObject subGridPrefabRef;
     public GameObject cellPrefabRef;
+    public GameData gameData;
 
     void Start()
     {
-    }
-
-    void Update()
-    {
-
-    }
-
-    void Awake()
-    {
+        gameData = SudokuGameManager.instance.gameData;
         subGrids = new SudokuSubGrid[3, 3];
+
         for (int i = 0; i < 3; i++)
         {
             for (int j = 0; j < 3; j++)
             {
-                GameObject subGridPrefabObj = (GameObject)Instantiate(subGridPrefabRef, Vector3.zero, Quaternion.identity);
+                GameObject subGridPrefabObj = (GameObject)Instantiate(
+                    subGridPrefabRef,
+                    Vector3.zero,
+                    Quaternion.identity
+                );
 
                 var grid = subGridPrefabObj.GetComponent<SudokuSubGrid>();
 
@@ -41,21 +35,48 @@ public class SudokuGrid : MonoBehaviour
                 subGrids[i, j].InitCells(subGridPrefabObj, cellPrefabRef);
 
                 subGridPrefabObj.transform.SetParent(gameObject.transform);
+                subGridPrefabObj.transform.localScale = new Vector3(1.0f, 1.0f, 1.0f);
             }
         }
         cells = GetComponentsInChildren<SudokuCell>();
         IsGenerate = false;
-        resetDynamicData();
+
+        if (gameData.GameState == GameData.EGameState.start)
+        {
+            OnLoadLastDate();
+        }
+        else
+        {
+            gameData.ResetAll();
+        }
     }
 
-    public void Init()
+    void OnLoadLastDate()
+    {
+
+        InitButtons();
+        InitResultButtons();
+        InitDraft();
+
+        OnSelect();
+    }
+
+    void Update() { }
+
+    void Awake()
+    {
+    }
+
+    public void GridInit()
     {
         if (IsGenerate)
         {
             return;
         }
+
+        ClearAllDraftNumberBold();
+        
         IsGenerate = true;
-        resetDynamicData();
         FillGrid();
 
         CreatePuzzle();
@@ -73,29 +94,26 @@ public class SudokuGrid : MonoBehaviour
         }
         IsGenerate = true;
 
-        InitButtons();
-        resultNumber = new int[9, 9];
-        IsGenerate = false;
-    }
-
-    public void GridCleanup()
-    {
-        resetDynamicData();
-
-
         for (int i = 0; i < 81; i++)
         {
             int row = i / 9;
             int col = i % 9;
             FillCell(row, col, 0);
         }
+        ClearAllDraftNumberBold();
+        InitButtons();
+        IsGenerate = false;
     }
 
-    private void resetDynamicData()
+    public void GridCleanup()
     {
-        gridNumber = new int[9, 9];
-        puzzleNumber = new int[9, 9];
-        resultNumber = new int[9, 9];
+        for (int i = 0; i < 81; i++)
+        {
+            int row = i / 9;
+            int col = i % 9;
+            FillCell(row, col, 0);
+        }
+        ClearAllDraftNumberBold();
     }
 
     bool FillGrid()
@@ -108,7 +126,7 @@ public class SudokuGrid : MonoBehaviour
             row = i / 9;
             col = i % 9;
 
-            if (gridNumber[row, col] == 0)
+            if (gameData.GridNumber[row, col] == 0)
             {
                 ShuffleArray(rowList);
                 foreach (var value in rowList)
@@ -117,7 +135,7 @@ public class SudokuGrid : MonoBehaviour
                     {
                         if (!SquarContainsNumber(row, col, value))
                         {
-                            gridNumber[row, col] = value;
+                            gameData.SetGridNumber(row, col, value);
                             if (IsValidate())
                             {
                                 return true;
@@ -136,7 +154,8 @@ public class SudokuGrid : MonoBehaviour
                 break;
             }
         }
-        gridNumber[row, col] = 0;
+
+        gameData.SetGridNumber(row, col, 0);
         return false;
     }
 
@@ -146,7 +165,7 @@ public class SudokuGrid : MonoBehaviour
         {
             for (int j = 0; j < SudokuGameManager.instance.sudokuSize; j++)
             {
-                if (gridNumber[i, j] == 0)
+                if (gameData.GridNumber[i, j] == 0)
                 {
                     return false;
                 }
@@ -158,14 +177,14 @@ public class SudokuGrid : MonoBehaviour
 
     void CreatePuzzle()
     {
-        System.Array.Copy(gridNumber, puzzleNumber, gridNumber.Length);
+        System.Array.Copy(gameData.GridNumber, gameData.PuzzleNumber, gameData.GridNumber.Length);
 
         Dictionary<int, List<Vector2Int>> myMap = new Dictionary<int, List<Vector2Int>>();
         for (int i = 0; i < SudokuGameManager.instance.sudokuSize; i++)
         {
             for (int j = 0; j < SudokuGameManager.instance.sudokuSize; j++)
             {
-                var value = gridNumber[i, j];
+                var value = gameData.GridNumber[i, j];
                 if (myMap.ContainsKey(value))
                 {
                     myMap[value].Add(new Vector2Int(i, j));
@@ -191,12 +210,13 @@ public class SudokuGrid : MonoBehaviour
             }
         }
 
-        for (int i = 0; i < SudokuGameManager.instance.difficulty; i++)
+        for (int i = 0; i < SudokuGameManager.instance.gameData.Difficulty; i++)
         {
             Vector2Int pos = candidata[i];
-            puzzleNumber[pos.x, pos.y] = 0;
+            gameData.SetPuzzleNumber(pos.x, pos.y, 0);
         }
 
+        gameData.DumpPuzzleNumber();
     }
 
     // 检查列中是否存在数字
@@ -204,7 +224,7 @@ public class SudokuGrid : MonoBehaviour
     {
         for (int i = 0; i < 9; i++)
         {
-            if (gridNumber[i, col] == value)
+            if (gameData.GridNumber[i, col] == value)
             {
                 return true;
             }
@@ -217,7 +237,7 @@ public class SudokuGrid : MonoBehaviour
     {
         for (int i = 0; i < 9; i++)
         {
-            if (gridNumber[row, i] == value)
+            if (gameData.GridNumber[row, i] == value)
             {
                 return true;
             }
@@ -234,7 +254,7 @@ public class SudokuGrid : MonoBehaviour
         {
             for (int j = 0; j < 3; j++)
             {
-                if (gridNumber[offsetRow + i, offsetCol + j] == value)
+                if (gameData.GridNumber[offsetRow + i, offsetCol + j] == value)
                 {
                     return true;
                 }
@@ -267,22 +287,89 @@ public class SudokuGrid : MonoBehaviour
         {
             for (int j = 0; j < SudokuGameManager.instance.sudokuSize; j++)
             {
-                int number = puzzleNumber[i, j];
+                int number = gameData.PuzzleNumber[i, j];
                 FillCell(i, j, number);
             }
         }
     }
 
+    void InitResultButtons()
+    {
+        for (int i = 0; i < SudokuGameManager.instance.sudokuSize; i++)
+        {
+            for (int j = 0; j < SudokuGameManager.instance.sudokuSize; j++)
+            {
+                int number = gameData.ResultNumber[i, j];
+                if (number != 0)
+                {
+                    FillResultCell(i, j, number);
+                }
+            }
+        }
+    }
+
+    void InitDraft()
+    {
+
+        for (int i = 0; i < SudokuGameManager.instance.sudokuSize; i++)
+        {
+            for (int j = 0; j < SudokuGameManager.instance.sudokuSize; j++)
+            {
+                var draft = gameData.DraftNumber[i, j];
+
+                for (int k = 0; k < cells.Length; k++)
+                {
+                    if (cells[k].checkPosition(i, j))
+                    {
+                        foreach (var node in draft.numbers)
+                        {
+                            cells[k].doInputDraftNumber(node);
+                        }
+                    }
+                }
+            }
+        }
+    }
     void FillCell(int row, int col, int value)
+    {
+        SudokuCell cell = GetCell(row, col);
+        if (cell == null)
+        {
+            return;
+        }
+        cell.SetCellValue(value, true);
+    }
+
+    void FillResultCell(int row, int col, int value)
+    {
+        SudokuCell cell = GetCell(row, col);
+        if (cell == null)
+        {
+            return;
+        }
+        cell.doInputNumber(value, gameData.ResultNumber[row, col] == gameData.GridNumber[row, col]);
+        cell.doHideAllDraftNumber();
+    }
+
+    SudokuCell GetCell(int row, int col)
+    {
+        int gridRow = row / 3;
+        int gridCol = col / 3;
+        var grid = subGrids[gridRow, gridCol];
+        if (grid == null)
+        {
+            return null;
+        }
+
+        return grid.cells[row % 3, col % 3];
+    }
+
+    void ClearAllDraftNumberBold()
     {
         for (int i = 0; i < cells.Length; i++)
         {
-            if (cells[i].checkPosition(row, col))
-            {
-                cells[i].SetCellValue(value);
-                cells[i].doHideAllDraftNumber();
-                return;
-            }
+            cells[i].doHideAllDraftNumber();
+            cells[i].doClearAllBold();
         }
     }
 
@@ -297,25 +384,77 @@ public class SudokuGrid : MonoBehaviour
         }
     }
 
-    public void doSelect(Vector2Int newVec)
+    public void doMarkGridByVector(Vector2Int newVec)
     {
-        int pickupNum = puzzleNumber[newVec.x, newVec.y];
-        if (pickupNum == 0)
-        {
-            pickupNum = resultNumber[newVec.x, newVec.y];
-        }
         foreach (var cell in cells)
         {
-            cell.SetSelectMask(SudokuCell.SelectMask.None);
             if (IsRelationPosition(cell.coordinate, newVec))
             {
                 cell.SetSelectMask(SudokuCell.SelectMask.Relation);
             }
-            if (cell.checkPosition(newVec.x, newVec.y))
-            {
-                cell.SetSelectMask(SudokuCell.SelectMask.Select);
-            }
+        }
+    }
 
+    public void doClearAllGrid()
+    {
+
+        foreach (var cell in cells)
+        {
+            cell.SetSelectMask(SudokuCell.SelectMask.None);
+        }
+    }
+
+    public void doMarkRelation(int pickupNum)
+    {
+        if (pickupNum == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < 81; i++)
+        {
+            int row = i / 9;
+            int col = i % 9;
+
+            Vector2Int vec = new Vector2Int(row, col);
+            int checkNumber = getConfirmNumber(vec);
+            if (checkNumber == pickupNum)
+            {
+                doMarkGridByVector(vec);
+            }
+        }
+    }
+
+    public int getConfirmNumber(Vector2Int newVec)
+    {
+        int pickupNum = gameData.PuzzleNumber[newVec.x, newVec.y];
+        if (pickupNum == 0)
+        {
+            return gameData.ResultNumber[newVec.x, newVec.y];
+        }
+        return pickupNum;
+    }
+
+    public void OnSelect()
+    {
+        Vector2Int newVec = SudokuGameManager.instance.gameData.PickupCoordinate;
+        if (newVec.x == -1 || newVec.y == -1)
+        {
+            return;
+        }
+        doClearAllGrid();
+        int pickupNum = getConfirmNumber(newVec);
+
+        // 自动标记相关的格子（大量降低难度，先关闭）
+        // doMarkRelation(pickupNum);
+
+        if (pickupNum != 0)
+        {
+            doMarkGridByVector(newVec);
+        }
+
+        foreach (var cell in cells)
+        {
             if (pickupNum == 0)
             {
                 cell.doClearAllBold();
@@ -323,6 +462,11 @@ public class SudokuGrid : MonoBehaviour
             else
             {
                 cell.doTryCheckBold(pickupNum);
+            }
+
+            if (cell.checkPosition(newVec.x, newVec.y))
+            {
+                cell.SetSelectMask(SudokuCell.SelectMask.Select);
             }
         }
     }
@@ -343,14 +487,14 @@ public class SudokuGrid : MonoBehaviour
         {
             return 0;
         }
-        if (puzzleNumber[coordinate.x, coordinate.y] != 0)
+        if (gameData.PuzzleNumber[coordinate.x, coordinate.y] != 0)
         {
             return 0;
         }
 
         if (isDraft)
         {
-            if (resultNumber[coordinate.x, coordinate.y] != 0)
+            if (gameData.ResultNumber[coordinate.x, coordinate.y] != 0)
             {
                 return 0;
             }
@@ -363,27 +507,27 @@ public class SudokuGrid : MonoBehaviour
                     break;
                 }
             }
+            gameData.SetDraftNumber(coordinate.x, coordinate.y, _number);
         }
         else
         {
-            if (resultNumber[coordinate.x, coordinate.y] == _number)
+            if (gameData.ResultNumber[coordinate.x, coordinate.y] == _number)
             {
                 return 0;
             }
 
-            if (resultNumber[coordinate.x, coordinate.y] == gridNumber[coordinate.x, coordinate.y])
+            if (gameData.ResultNumber[coordinate.x, coordinate.y] == gameData.GridNumber[coordinate.x, coordinate.y])
             {
                 return 0;
             }
 
-            resultNumber[coordinate.x, coordinate.y] = _number;
-            var isTrue = gridNumber[coordinate.x, coordinate.y] == _number;
-            foreach (var cell in cells)
+            gameData.SetResultNumber(coordinate.x, coordinate.y, _number);
+            var isTrue = gameData.GridNumber[coordinate.x, coordinate.y] == _number;
+
+            var pickCell = GetCell(coordinate.x, coordinate.y);
+            if (pickCell)
             {
-                if (cell.checkPosition(coordinate.x, coordinate.y))
-                {
-                    cell.doInputNumber(_number, isTrue);
-                }
+                pickCell.doInputNumber(_number, isTrue);
             }
 
             if (isTrue)
@@ -397,29 +541,28 @@ public class SudokuGrid : MonoBehaviour
             }
 
             return isTrue ? 1 : 2;
-
         }
         return 0;
     }
 
     private void doClearRelationCellDraftNumber(Vector2Int coordinate, int number)
     {
-        int offsetCol = coordinate.x / 3;
-        int offsetRow = coordinate.y / 3;
+        int offsetCol = (coordinate.x / 3) * 3;
+        int offsetRow = (coordinate.y / 3) * 3;
 
         for (int i = 0; i < 9; i++)
         {
-            var colCell = findCellByCoordinate(new Vector2Int(i, coordinate.y));
+            var colCell = GetCell(i, coordinate.y);
             if (colCell != null)
             {
                 colCell.doClearCellDraftNumber(number);
             }
-            var rowCell = findCellByCoordinate(new Vector2Int(coordinate.x, i));
+            var rowCell = GetCell(coordinate.x, i);
             if (rowCell != null)
             {
                 rowCell.doClearCellDraftNumber(number);
             }
-            var gridCell = findCellByCoordinate(new Vector2Int((offsetCol * 3) + (i % 3), (offsetRow * 3) + i / 3));
+            var gridCell = GetCell(offsetCol + (i % 3), offsetRow + (i / 3));
             if (gridCell != null)
             {
                 gridCell.doClearCellDraftNumber(number);
@@ -429,37 +572,29 @@ public class SudokuGrid : MonoBehaviour
 
     private SudokuCell findCellByCoordinate(Vector2Int coordinate)
     {
-        foreach (var cell in cells)
-        {
-            if (cell.checkPosition(coordinate.x, coordinate.y))
-            {
-                return cell;
-            }
-        }
-        return null;
+
+        return GetCell(coordinate.x, coordinate.y);
     }
 
     public bool checkResultSuccess()
     {
-
         for (int i = 0; i < 81; i++)
         {
             int row = i / 9;
             int col = i % 9;
 
-            if (puzzleNumber[row, col] == 0 && resultNumber[row, col] == 0)
+            if (gameData.PuzzleNumber[row, col] == 0 && gameData.ResultNumber[row, col] == 0)
             {
                 return false;
             }
 
-            if (resultNumber[row, col] != 0 && resultNumber[row, col] != gridNumber[row, col])
+            if (gameData.ResultNumber[row, col] != 0 && gameData.ResultNumber[row, col] != gameData.GridNumber[row, col])
             {
                 return false;
             }
         }
         return true;
     }
-
 
     public void doClearCell(Vector2Int coordinate)
     {
@@ -468,27 +603,27 @@ public class SudokuGrid : MonoBehaviour
             cell.SetSelectMask(SudokuCell.SelectMask.None);
             cell.doClearAllBold();
         }
+
         if (coordinate.x == -1 || coordinate.y == -1)
         {
             return;
         }
 
-        if (puzzleNumber[coordinate.x, coordinate.y] != 0)
+        if (gameData.PuzzleNumber[coordinate.x, coordinate.y] != 0)
         {
             return;
         }
 
-        if (resultNumber[coordinate.x, coordinate.y] != 0)
+        if (gameData.ResultNumber[coordinate.x, coordinate.y] != 0)
         {
-            resultNumber[coordinate.x, coordinate.y] = 0;
-        }
-        foreach (var cell in cells)
-        {
-            if (cell.checkPosition(coordinate.x, coordinate.y))
-            {
-                cell.doInputNumber(0, true);
-            }
+            gameData.SetResultNumber(coordinate.x, coordinate.y, 0);
         }
 
+        var c = GetCell(coordinate.x, coordinate.y);
+
+        if (c != null)
+        {
+            c.doInputNumber(0, true);
+        }
     }
 }
