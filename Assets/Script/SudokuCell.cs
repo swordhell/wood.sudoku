@@ -1,8 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 public class SudokuCell : MonoBehaviour
 {
@@ -45,8 +45,8 @@ public class SudokuCell : MonoBehaviour
 
         for (int i = 0; i < txtDraftNumber.Length; i++)
         {
-            txtDraftNumber[i].text = (i + 1).ToString();
-            txtDraftNumber[i].gameObject.SetActive(false);
+            txtDraftNumber[i].text = " ";
+            txtDraftNumber[i].gameObject.SetActive(true);
         }
         btnNum.onClick.AddListener(OnBTNSelect);
     }
@@ -57,7 +57,6 @@ public class SudokuCell : MonoBehaviour
     }
     public void SetCellValue(int _value, bool _isDefault)
     {
-        btnNum.gameObject.SetActive(true);
         if (_value != 0)
         {
             txtNumber.text = _value.ToString();
@@ -133,30 +132,48 @@ public class SudokuCell : MonoBehaviour
         }
     }
 
-    public void doInputDraftNumber(int _value)
+    public void DoInputDraftNumber(int _value, bool _isSet)
     {
         if (_value < 1)
         {
             return;
         }
         var txt = txtDraftNumber[_value - 1];
-        txtDraftNumber[_value - 1].gameObject.SetActive(!txt.gameObject.activeSelf);
+        if (txt.text == " ")
+        {
+            txt.text = _value.ToString();
+            if (_isSet)
+            {
+                SudokuGameManager.instance.gameData.AddDraftNumber(coordinate.x, coordinate.y, _value);
+            }
+        }
+        else
+        {
+            txt.text = " ";
+            if (_isSet)
+            {
+                SudokuGameManager.instance.gameData.RemoveDrafNumber(coordinate.x, coordinate.y, _value);
+            }
+        }
+
     }
 
-    public void doClearCellDraftNumber(int _value)
+    public void DoClearCellDraftNumber(int _value)
     {
         if (_value < 1)
         {
             return;
         }
-        txtDraftNumber[_value - 1].gameObject.SetActive(false);
+        var txt = txtDraftNumber[_value - 1];
+        txt.text = " ";
+        SudokuGameManager.instance.gameData.RemoveDrafNumber(coordinate.x, coordinate.y, _value);
     }
 
     public void doHideAllDraftNumber()
     {
         foreach (var txt in txtDraftNumber)
         {
-            txt.gameObject.SetActive(false);
+            txt.text = " ";
         }
         SudokuGameManager.instance.gameData.ClearDraftNumber(coordinate.x, coordinate.y);
     }

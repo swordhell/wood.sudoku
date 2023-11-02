@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEditor;
+using UnityEngine;
 
 public class SudokuGrid : MonoBehaviour
 {
@@ -75,7 +75,7 @@ public class SudokuGrid : MonoBehaviour
         }
 
         ClearAllDraftNumberBold();
-        
+
         IsGenerate = true;
         FillGrid();
 
@@ -317,15 +317,15 @@ public class SudokuGrid : MonoBehaviour
             {
                 var draft = gameData.DraftNumber[i, j];
 
-                for (int k = 0; k < cells.Length; k++)
+                SudokuCell cell = GetCell(i, j);
+                if (cell == null)
                 {
-                    if (cells[k].checkPosition(i, j))
-                    {
-                        foreach (var node in draft.numbers)
-                        {
-                            cells[k].doInputDraftNumber(node);
-                        }
-                    }
+                    continue;
+                }
+
+                foreach (var node in draft.numbers)
+                {
+                    cell.DoInputDraftNumber(node, false);
                 }
             }
         }
@@ -503,7 +503,7 @@ public class SudokuGrid : MonoBehaviour
             {
                 if (cell.checkPosition(coordinate.x, coordinate.y))
                 {
-                    cell.doInputDraftNumber(_number);
+                    cell.DoInputDraftNumber(_number, true);
                     break;
                 }
             }
@@ -555,17 +555,17 @@ public class SudokuGrid : MonoBehaviour
             var colCell = GetCell(i, coordinate.y);
             if (colCell != null)
             {
-                colCell.doClearCellDraftNumber(number);
+                colCell.DoClearCellDraftNumber(number);
             }
             var rowCell = GetCell(coordinate.x, i);
             if (rowCell != null)
             {
-                rowCell.doClearCellDraftNumber(number);
+                rowCell.DoClearCellDraftNumber(number);
             }
             var gridCell = GetCell(offsetCol + (i % 3), offsetRow + (i / 3));
             if (gridCell != null)
             {
-                gridCell.doClearCellDraftNumber(number);
+                gridCell.DoClearCellDraftNumber(number);
             }
         }
     }

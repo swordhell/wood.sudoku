@@ -83,20 +83,6 @@ public class SudokuGameManager : MonoBehaviour
         sudokuGrid.OnSelect();
     }
 
-    private void initSudoGameObject()
-    {
-        if (sudokuGrid == null)
-        {
-            var child = sudokuCanvas.transform.Find("Grid");
-            sudokuGrid = child.GetComponent<SudokuGrid>();
-        }
-
-        if (sudokuBoard == null)
-        {
-            sudokuBoard = sudokuCanvas.GetComponent<SudokuBoard>();
-        }
-    }
-
     public void OnBTNInputNumber(int _number)
     {
         if (!IsGameProgress())
@@ -112,6 +98,20 @@ public class SudokuGameManager : MonoBehaviour
             {
                 OnFail();
             }
+        }
+    }
+
+    private void initSudoGameObject()
+    {
+        if (sudokuGrid == null)
+        {
+            var child = sudokuCanvas.transform.Find("Grid");
+            sudokuGrid = child.GetComponent<SudokuGrid>();
+        }
+
+        if (sudokuBoard == null)
+        {
+            sudokuBoard = sudokuCanvas.GetComponent<SudokuBoard>();
         }
     }
 
@@ -131,15 +131,14 @@ public class SudokuGameManager : MonoBehaviour
         gameData.ResetPickupCoordinate();
     }
 
-    void Start()
+    public void OnBTNMusicOpen(bool _isOpen)
     {
-        InvokeRepeating(nameof(OnTimerElapsed), 1, 1);
-        initSudoGameObject();
+        gameData.SetMusic(_isOpen);
     }
 
-    void Update()
+    public void OnBTNDraftOpen(bool _isOpen)
     {
-        gameData.Update();
+        gameData.SetIsDraft(_isOpen);
     }
 
     public void OnBTNPause()
@@ -149,6 +148,17 @@ public class SudokuGameManager : MonoBehaviour
             gameData.SetPause(!gameData.IsPaused);
             sudokuBoard.OnPause();
         }
+    }
+
+    void Start()
+    {
+        InvokeRepeating(nameof(OnTimerElapsed), 1, 1);
+        initSudoGameObject();
+    }
+
+    void Update()
+    {
+        gameData.Update();
     }
 
     private void OnTimerElapsed()
@@ -176,13 +186,4 @@ public class SudokuGameManager : MonoBehaviour
         sudokuBoard.doDefeate();
     }
 
-    public void OnBTNMusicOpen(bool _isOpen)
-    {
-        gameData.SetMusic(_isOpen);
-    }
-
-    public void OnBTNDraftOpen(bool _isOpen)
-    {
-        gameData.SetIsDraft(_isOpen);
-    }
 }
